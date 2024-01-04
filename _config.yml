@@ -98,6 +98,78 @@ ignore:
 ## Themes: https://hexo.io/themes/
 theme: next 
 
+# ---------------------------------------------------------------
+# Theme Core Configuration Settings
+# ---------------------------------------------------------------
+theme_config:
+  # Allow to cache content generation.
+  cache:
+    enable: false
+    
+  # Schemes
+  #scheme: Mist
+  #scheme: Pisces
+  scheme: Gemini
+  menu:
+    home: / || fa fa-home
+    about: /about/ || fa fa-user
+    tags: /tags/ || fa fa-tags
+    categories: /categories/ || fa fa-th
+    archives: /archives/ || fa fa-archive
+    #schedule: /schedule/ || fa fa-calendar
+    #sitemap: /sitemap.xml || fa fa-sitemap
+    #commonweal: /404/ || fa fa-heartbeat
+    
+  favicon:
+    small: /images/favicon-16x16-next.png
+    medium: /images/favicon-32x32-next.png
+    apple_touch_icon: /images/apple-touch-icon-next.png
+    safari_pinned_tab: /images/logo.svg
+  menu_settings:
+    icons: true
+    badges: false
+      
+  # ---------------------------------------------------------------
+  # Sidebar Settings
+  # See: https://theme-next.js.org/docs/theme-settings/sidebar
+  # ---------------------------------------------------------------
+  sidebar:
+    # Sidebar Display (only for Muse | Mist), available values:
+    #  - post    expand on posts automatically. Default.
+    #  - always  expand for all pages automatically.
+    #  - hide    expand only when click on the sidebar toggle icon.
+    #  - remove  totally remove sidebar including sidebar toggle.
+    display: post
+    
+  # ---------------------------------------------------------------
+  # Footer Settings
+  # See: https://theme-next.js.org/docs/theme-settings/footer
+  # ---------------------------------------------------------------
+
+  # Show multilingual switcher in footer.
+  language_switcher: false
+
+  footer:
+    # Specify the year when the site was setup. If not defined, current year will be used.
+    #since: 2021
+
+    # Icon between year and copyright info.
+    icon:
+      # Icon name in Font Awesome. See: https://fontawesome.com/icons
+      name: fa fa-heart
+      # If you want to animate the icon, set it to true.
+      animated: false
+      # Change the color of icon, using Hex Code.
+      color: "#ff0000"
+
+    # If not defined, `author` from Hexo `_config.yml` will be used.
+    # Set to `false` to disable the copyright statement.
+    copyright:
+
+    # Powered by Hexo & NexT
+    powered: false
+    
+    
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
