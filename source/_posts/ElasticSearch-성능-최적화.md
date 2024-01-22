@@ -43,6 +43,7 @@ Heap address: 0x0000001000800000, size: 31744 MB, Compressed Oops mode: Non-zero
 이런 식으로 base 주소가 0이 아님을 확인할 수 있고 Non-zero base라고 표시된다.
 
 - 이번엔 힙을 30G로 준다면
+
 ```sh
 java -Xmx30G -XX:+UnlockDiagnosticVMOptions -Xlog:gc+heap+coops=debug -version
 ```
