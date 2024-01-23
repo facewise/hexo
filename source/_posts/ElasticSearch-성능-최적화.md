@@ -4,7 +4,7 @@ date: 2024-01-22 16:51:38
 tags: ElasticSearch
 category: Elastic Stack
 ---
-# 1. Heap Size
+# Heap Size
 
 일반적으로 메모리의 50%를 힙으로 할당하는 것을 권장하지만 힙 사이즈가 32G 이상으로 커질 경우 단점이 있다.
 
@@ -29,25 +29,21 @@ Compressed OOPS 방식의 35bit 주소에서 offset 3bit를 버리기 위해 shi
 하지만 메모리 주소의 시작점이 0이라면 shift left 3 (<< 3)만 해도 원래 주소를 알아낼 수 있다. (Zero based)
 
 이는 JVM으로 oops 방식을 확인하는 명령어로 확인해볼 수 있다.
-
+<br>
 - 메모리가 64G인 시스템에서 힙을 31G로 준다면?
-
 ```sh
 java -Xmx31G -XX:+UnlockDiagnosticVMOptions -Xlog:gc+heap+coops=debug -version
 ```
-
 ```sh
 Heap address: 0x0000001000800000, size: 31744 MB, Compressed Oops mode: Non-zero disjoint base: 0x0000001000000000, Oop shift amount: 3
 ```
 
 이런 식으로 base 주소가 0이 아님을 확인할 수 있고 Non-zero base라고 표시된다.
-
+<br>
 - 이번엔 힙을 30G로 준다면
-
 ```sh
 java -Xmx30G -XX:+UnlockDiagnosticVMOptions -Xlog:gc+heap+coops=debug -version
 ```
-
 ```sh
 Heap address: 0x0000000080000000, size: 30720 MB, Compressed Oops mode: Zero based, Oop shift amount: 3
 ```
@@ -55,14 +51,16 @@ Heap address: 0x0000000080000000, size: 30720 MB, Compressed Oops mode: Zero bas
 Zero based 모드라고 표시되는 것을 확인할 수 있다.
 
 그리고 ES는 OS의 나머지 여유 메모리를 파일시스템 캐시로 이용하기 때문에 이 캐시의 크기를 더 늘리는 것이 더 좋은 성능을 낼 수 있다고 한다.
-
+<br>
 **즉, OS의 메모리 절반을 힙 사이즈로 할당하면 나머지 절반은 ES가 캐시로 사용한다는 얘기.**
 
 또 다른 이유로는 힙 사이즈가 클 경우 gc가 빈번하게 일어나는 앱에서는 힙에 비례하여 cpu 사용량이 증가하고 stop the world 시간이 늘어나기 때문에 너무 큰 힙 사이즈는 좋지 않을 수 있다.
 
 이건 JVM 애플리케이션의 공통 사항이다.
 
-# 2. Mapping
+<br>
+
+# Mapping
 
 인덱스를 생성하기 전에 인덱스 템플릿을 생성하고 매핑을 적절히 해주는 것이 좋다.
 
@@ -74,8 +72,9 @@ Zero based 모드라고 표시되는 것을 확인할 수 있다.
 
 인덱스의 Mapping을 변경하는 작업은 그렇게 어려운 일이 아니므로 조금씩 공부하면서 변경하는 것도 좋다.
 
+<br>
 
-# 3. Shard
+# Shard
 
 샤드는 기본적으로 인덱스 1개와 매핑되어 있고 샤드의 갯수는 인덱스 1개당 1개 이상이다. (1대다 관계)
 
@@ -108,6 +107,7 @@ ES에서는 노드 1개당 샤드의 갯수가 너무 많으면 좋지 않다고
 
 하지만 또한, 50GB 이상으로 너무 크게 하지 않을 것을 권장하고 있다.
 
+<br>
 
 ## ElasticSearch >= 8.3 는 다르다!
 
