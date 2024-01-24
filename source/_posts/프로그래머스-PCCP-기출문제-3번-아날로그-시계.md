@@ -1,5 +1,5 @@
 ---
-title: 프로그래머스 PCCP 기출문제 3번 - 아날로그 시계
+title: 프로그래머스 PCCP 기출문제 3번 - 아날로그 시계 (JAVA)
 date: 2024-01-23 17:33:57
 tags:
 ---
@@ -53,24 +53,19 @@ public int solution(int h1, int m1, int s1, int h2, int m2, int s2) {
     int answer = 0;
 
     while (true) {
-        // 초침과 분침 비교
-        if (secDegree <= minDegree && minDegree + 12 <= secDegree + 720) {
+        if (secDegree <= minDegree && minDegree + 12 < secDegree + 720) {
             answer++;
         }
 
-        // 초침과 시침 비교
-        if (secDegree <= hourDegree && hourDegree + 1 <= secDegree + 720) {
+        if (secDegree <= hourDegree && hourDegree + 1 < secDegree + 720) {
             answer++;
         }
 
-        // 초침 분침 시침이 다 겹치면 중복 케이스이므로 1 빼줌
-        if (secDegree == minDegree && minDegree == hourDegree || secDegree + 720 == minDegree + 12 && minDegree + 12 == hourDegree + 1) {
+        if (secDegree == minDegree && minDegree == hourDegree) {
             answer--;
         }
 
-        // 1초 증가
         s1++;
-
         if (s1 == 60) {
             s1 = 0;
             m1++;
@@ -91,16 +86,144 @@ public int solution(int h1, int m1, int s1, int h2, int m2, int s2) {
 ```
 
 
-이렇게 접근했더니 0시 0분 0초부터 23시 59분 59초까지, 즉 하루종일 시계가 돌아갈 때 답이 계속 맞지 않았다.
-
-정확히 말하면 내가 구한 답이 정답보다 컸다.
-
-그렇다는 것은 시침, 분침, 초침이 전부 다 겹치는 경우가 초와 초 사이에도 빈번히 일어난다는 뜻이다.
-
-> 예를 들면, 23.453초에 시침, 분침, 초침이 전부 겹친다는 것
-
-정답이 되는 케이스를 구하는 로직을 수정해야 했다.
+이렇게 접근했더니 11시 59분 30초부터 12시 0분 0초까지 돌아갈 때 답이 맞지 않았다.
 
 <br>
 
 # 문제 해결
+
+도저히 풀기 어려운 와중에 수학적인 접근법을 제시해 본 사람이 있었다.
+
+## 알고리즘
+
+1. 0시 0분 0초를 기준으로 H시 M분 S초까지의 총 시간을 초 단위로 구한다
+2. 해당 시간동안 초침이 시침과 만나는 횟수를 구한다
+3. 해당 시간동안 초침이 분침과 만나는 횟수를 구한다
+4. 위 (2)와 (3)을 더한다
+5. 시침, 분침, 초침이 모두 겹치는 0시 0분 0초와 12시 0분 0초가 포함되면 1을 뺀다
+6. (h2시 m2분 s2초까지 횟수) - (h1시 m1분 s1초까지 횟수) = 최종 정답
+   
+<br>
+
+### 초침과 시침 만나는 횟수 구하기
+<br>
+
+0시 0분 0초에 모두 겹쳐있는 상태에서 출발한다고 가정해보자.
+
+초침은 1초에 6도를 돈다.
+
+시침은 1시간에 30도를 돌아가고 1시간은 3600초이므로 시침은 1초 동안 $30 / 3600$도 즉 $1 \over 120$도 돌아간다.
+
+초침이 1바퀴를 돌아 제자리로 온 뒤에 다시 움직여서 시침과 만나는 시간을 식으로 세우면
+
+$$ 6t - 360 = {1 \over 120}t $$
+
+여기서 좌변은 t초 후의 초침의 각이고 우변은 t초 후의 시침의 각이다.
+
+식을 정리하면,
+
+$$ 719t = 43200 $$
+
+이므로 $ t = {43200 \over 719} $초 후에 초침과 시침이 만난다는 것을 알 수 있다.
+
+초침과 시침이 만난 후에는 다시 둘이 겹쳐있는 상태이므로 또 $ {43200 \over 719} $초 후에 만나게 되므로, 초침과 시침이 만나는 주기는 ${43200 \over 719}$초가 된다.
+
+그러면 t초 동안 만나는 횟수는 t를 ${43200 \over 719}$로 나누면 되는 것이다.
+
+### 초침과 분침 만나는 횟수 구하기
+
+분침은 1초에 $1\over10$도 씩 움직인다.
+
+시침과 마찬가지로 식을 세우면
+
+$$ 6t - 360 = {1\over10}t $$
+이므로 정리하면
+
+$$ 59t = 3600 $$
+
+이 되어서 초침과 분침은 $3600\over59$초마다 한번 씩 만나게 되는 걸 알 수 있다.
+
+<br>
+
+## 코드로 옮기기
+
+총 시간을 구하는 함수와 해당 시간동안 분침, 시침과 만나는 횟수를 구하는 함수를 따로 분리하였다.
+
+```java
+/**
+ * h시 m분 s초 까지 총 시간(초)
+ */
+int totalSec(int h, int m, int s) {
+    return 3600 * h + 60 * m + s;
+}
+
+/**
+ * 0시 0분 0초부터 h시 m분 s초 까지의 알람 횟수
+ * 0시 0분 0초에 울리는 알람은 제외됨.
+ */
+int countAlarm(int h, int m, int s) {
+    int totalSec = totalSec(h, m, s);
+
+    // 초침과 분침은 3600/59초마다 만남
+    int minAlarm = totalSec * 59 / 3600;
+
+    // 초침과 시침은 43200/719초마다 만남
+    int hourAlarm = totalSec * 719 / 43200;
+
+    // 12시 0분 0초 이상인 경우에는 시침 분침 초침이 겹치므로 1회 빼야함
+    int exception = totalSec >= 43200 ? 1 : 0;
+
+    return minAlarm + hourAlarm - exception;
+}
+```
+
+<br>
+
+그리고 문제에서 시작 시간이 0시 0분 0초일 때 1회 알람이 울린다고 설명이 있으므로
+
+알고리즘에서 세웠던 식에 추가적으로 작업이 필요했다.
+
+### 최종 코드
+
+```java
+class Solution {
+    public int solution(int h1, int m1, int s1, int h2, int m2, int s2) {
+        // 시작 시간이 0시 0분 0초이거나 12시 0분 0초인 경우 시작하자마자 1회 울리므로 예외 처리
+        int exception = (h1 % 12 == 0 && m1 == s1 && s1 == 0) ? 1 : 0;
+        return countAlarm(h2, m2, s2) - countAlarm(h1, m1, s1) + exception;
+    }
+
+    /**
+     * h시 m분 s초 까지 총 시간(초)
+     */
+    int totalSec(int h, int m, int s) {
+        return 3600 * h + 60 * m + s;
+    }
+
+    /**
+     * 0시 0분 0초부터 h시 m분 s초 까지의 알람 횟수
+     * 0시 0분 0초에 울리는 알람은 제외됨.
+     */
+    int countAlarm(int h, int m, int s) {
+        int totalSec = totalSec(h, m, s);
+
+        // 초침과 분침은 3600/59초마다 만남
+        int minAlarm = totalSec * 59 / 3600;
+
+        // 초침과 시침은 43200/719초마다 만남
+        int hourAlarm = totalSec * 719 / 43200;
+
+        // 12시 0분 0초 이상인 경우에는 시침 분침 초침이 겹치므로 1회 빼야함
+        int exception = totalSec >= 43200 ? 1 : 0;
+
+        return minAlarm + hourAlarm - exception;
+    }
+}
+
+```
+
+# 느낀점
+
+사실 수학적인 풀이는 다른 사람의 풀이를 약간 참고하였는데
+
+알고리즘 문제 풀이를 할 때는 역시 프로그래밍적 구현도 중요하지만 수학적인 접근 방법을 먼저 생각해보는 것이 좋은 것 같다.
