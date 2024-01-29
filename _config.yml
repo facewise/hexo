@@ -244,3 +244,6 @@ theme_config:
   github_banner:
     enable: true
     permalink: https://github.com/facewise
+  
+  motion:
+    enable: false

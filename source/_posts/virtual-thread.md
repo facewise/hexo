@@ -1,5 +1,5 @@
 ---
-title: [Java] 가상 스레드 (Virtual Thread)
+title: 가상 스레드 (Virtual Thread)
 date: 2024-01-29 17:23:07
 category: Java
 ---
