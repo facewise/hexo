@@ -117,8 +117,8 @@ theme_config:
   minify: true
     
   # Schemes
-  scheme: Mist
-  #scheme: Pisces
+  #scheme: Mist
+  scheme: Pisces
   #scheme: Gemini
   
   menu:
@@ -246,4 +246,4 @@ theme_config:
     permalink: https://github.com/facewise
   
   motion:
-    enable: false
+    async: true

@@ -39,12 +39,154 @@ Spring WebFlux는 Reactive API를 훌륭하게 구현해서 스레드가 부족�
 기존의 JVM 스레드는 플랫폼 스레드(Platform Thread)라고 부르며 이는 OS 스레드를 래핑(Wrapping)한 스레드여서 OS 스레드와 일대일 관계였다.
 <br>
 
+## 플랫폼 스레드와 차이
+
 **플랫폼 스레드는 다음과 같은 단점이 있다.**
 - OS 스레드의 래퍼로 구현하기 때문에 사용가능한 스레드 수가 제한됨
 - OS에 의해 생성되고 스케줄링되기 때문에 비용이 비싸고 컨텍스트 스위칭 비용도 비싸다
 <br>
 
-이에 비해 가상 스레드는 JDK에서 구현하고 제공하는 user-mode 스레드이다.
+**이에 비해 가상 스레드는 JDK에서 구현하고 제공하는 user-mode 스레드이다.**
 
 가상 스레드는 특정 OS 스레드에 연결되어 있지 않고 M:N 스케줄링을 사용한다. 가상 스레드의 수(M)가 더 적은 수(N)의 OS 스레드에서 실행되게 예약한다.
+
+{% asset_img vt.png %}
+
+가상 스레드는 CPU에서 계산을 수행할 때만 OS 스레드를 사용한다.
+
+가상 스레드에서 blocking I/O 작업을 시작할 때 자바는 non-blocking OS를 호출하고 가상 스레드를 임시로 중단한다.
+<br>
+
+# 기존 스레드 모델과 성능 비교
+
+간단한 애플리케이션을 만들어서 성능 비교를 해보았다.
+
+**스프링 부트 버전**
+- Spring Boot 3.2.1
+
+**성능 테스트 도구**
+- Apache JMeter
+
+**테스트 환경 (VM)**
+- Centos7 x86_64
+- CPU 1 core 1 Thread
+- 1GB Memory
+- JDK 21
+<br>
+
+요청을 받으면 300ms동안 sleep하고 리턴하는 간단한 API를 만들었다.
+
+그리고 현재 스레드가 가상 스레드인지 확인하기 위해 `Thread.currentThread().isVirtual`을 사용하여 로그도 남겼다.
+
+```kotlin
+package com.example.study.controller
+
+import org.slf4j.LoggerFactory
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
+
+class UserController {
+
+    private val log = LoggerFactory.getLogger(this.javaClass)
+
+    @GetMapping
+    fun get(): String {
+        log.info("VT: {}", Thread.currentThread().isVirtual)
+        Thread.sleep(300)
+        return "ok"
+    }
+}
+```
+<br>
+
+그리고 톰캣이 요청을 처리할 때 가상 스레드를 사용할 수 있게 Bean을 등록해주었다.
+
+```kotlin
+package com.example.study.config
+
+import org.apache.coyote.ProtocolHandler
+import org.springframework.boot.web.embedded.tomcat.TomcatProtocolHandlerCustomizer
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import java.util.concurrent.Executors
+
+@Configuration
+class ThreadConfig {
+    @Bean
+    fun virtualThreadExecutorCustomizer(): TomcatProtocolHandlerCustomizer<*> {
+        return TomcatProtocolHandlerCustomizer { protocolHandler: ProtocolHandler ->
+            protocolHandler.executor = Executors.newVirtualThreadPerTaskExecutor()
+        }
+    }
+}
+```
+<br>
+
+이 Bean 설정은 Spring Boot 3.2 버전 이상에서는 `application.properties`에서
+`spring.threads.virtual.enabled=true`를 설정하면 자동으로 생성된다.
+<br>
+
+## 테스트 결과
+
+처음에 가상유저를 100으로 했을 때는 플랫폼 스레드와 가상 스레드의 차이가 없었다.
+
+이는 기본 스레드 풀 200개가 활성화되어서 별 차이가 없는 것 같았다.
+<br>
+
+## 500 가상 유저
+
+가상 스레드는 최대 스레드 풀을 상회하는 요청이 들어왔을 때 진가를 발휘했다.
+
+**기존 스레드**
+
+TPS
+{% asset_img non_vt_500threads.png %}
+
+응답시간
+{% asset_img non_vt_500threads_rtt.png %}
+
+기존 스레드 모델에서는 650 ~ 700 TPS를 맴돌았고 평균 응답시간은 750ms였다.
+
+**가상 스레드**
+
+TPS
+{% asset_img vt_500threads.png %}
+
+응답시간
+{% asset_img vt_500threads_rtt.png %}
+
+가상 스레드로 실행한 서버는 1400 ~ 1700 TPS를 기록했고 평균 응답시간은 초반을 제외하면 300 ~ 400ms 정도였다.
+<br>
+
+## 1000 가상 유저
+
+이번엔 훨씬 더 많은 유저를 가정하고 테스트해보았다.
+
+**기존 스레드**
+
+TPS
+{% asset_img non_vt_1000threads.png %}
+
+응답시간
+{% asset_img non_vt_1000threads_rtt.png %}
+
+기존 스레드의 TPS는 가상 유저가 500일 때와 별다르지 않았고 응답시간은 거의 2배가 되었다.
+<br>
+
+**가상 스레드**
+
+TPS
+{% asset_img vt_1000threads.png %}
+
+응답시간
+{% asset_img vt_1000threads_rtt.png %}
+
+가상 스레드로는 2400 ~ 3000 TPS를 기록했고 평균 응답시간은 300 ~ 400ms였다.
+<br>
+
+확실히 기존 플랫폼 스레드만을 사용했을 때보다 유의미하게 성능이 개선되는 것을 확인할 수 있었다.
+<br>
+
+# 가상 스레드 주의사항
+
 
