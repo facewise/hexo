@@ -95,6 +95,8 @@ public class MyService {
 10. `@PostAuthorize`안의 표현식이 통과하면 정상적인 흐름으로 종료된다.
 11. 마찬가지로 통과하지 못하면 `AccessDeniedException`을 던진다.
 
+<br>
+
 # 애너테이션
 
 메소드 인가를 설정하는 방법은 여러가지가 있지만 애너테이션 방식이 제일 권장된다.
